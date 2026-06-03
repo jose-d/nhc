@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocky: [8, 9, 10]
+        rocky: [8, 9]
 
     runs-on: ubuntu-latest
     container:
