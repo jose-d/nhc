@@ -5,9 +5,14 @@ on:
 
 jobs:
   build-rpm:
+    strategy:
+      fail-fast: false
+      matrix:
+        rocky: [8, 9, 10]
+
     runs-on: ubuntu-latest
     container:
-      image: rockylinux:9
+      image: rockylinux:${{ matrix.rocky }}
 
     steps:
       - name: Install build dependencies
@@ -32,16 +37,16 @@ jobs:
       - name: Build RPM
         run: |
           rpmbuild -ta lbnl-nhc-*.tar.gz \
-            --define "_topdir $GITHUB_WORKSPACE/rpmbuild"
+            --define "_topdir $GITHUB_WORKSPACE/rpmbuild-${{ matrix.rocky }}"
 
       - name: Upload RPMs
         uses: actions/upload-artifact@v4
         with:
-          name: nhc-rpms
-          path: rpmbuild/RPMS/noarch/*.rpm
+          name: nhc-rpms-rocky${{ matrix.rocky }}
+          path: rpmbuild-${{ matrix.rocky }}/RPMS/noarch/*.rpm
 
       - name: Upload SRPM
         uses: actions/upload-artifact@v4
         with:
-          name: nhc-srpm
-          path: rpmbuild/SRPMS/*.rpm
+          name: nhc-srpm-rocky${{ matrix.rocky }}
+          path: rpmbuild-${{ matrix.rocky }}/SRPMS/*.rpm
