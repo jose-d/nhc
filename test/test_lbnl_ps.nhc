@@ -1,6 +1,8 @@
 # Tests for lbnl_ps.nhc
 
 function populate_ps_data() {
+    local SYSUSER UID
+
     # Sample process data taken from an actual compute node running an
     # actual job.  Kernel threads and some other unrelated processes
     # have been pruned for brevity and readability.  Names have been
@@ -326,6 +328,14 @@ function populate_ps_data() {
     PWDATA_USERS=( "root" "rpcuser" "rpc" "ntp" "mej" "someuser" )
     PWDATA_SYSTEM_USERS=( "root" "rpcuser" "rpc" "ntp" )
     PWDATA_USERID_MAP="||root:0||rpcuser:29||rpc:32||ntp:38||mej:777||someuser:12345"
+    MAX_SYS_UID=0
+    for UID in "${PWDATA_UIDS[@]}" ; do
+        for SYSUSER in "${PWDATA_SYSTEM_USERS[@]}" ; do
+            if [[ "${PWUID_USER[$UID]}" = "$SYSUSER" && $UID -gt $MAX_SYS_UID ]]; then
+                MAX_SYS_UID=$UID
+            fi
+        done
+    done
 
     # Fake job data so we don't need /var/spool/torque/mom_priv/jobs/*.JB
     NHC_AUTH_USERS="root nobody mej"
