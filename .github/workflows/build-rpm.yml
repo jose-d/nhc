@@ -45,11 +45,13 @@ jobs:
       - name: Upload RPMs
         uses: actions/upload-artifact@v4
         with:
+          if-no-files-found: error
           name: nhc-rpms-rocky${{ matrix.rocky }}
           path: rpmbuild-${{ matrix.rocky }}/RPMS/noarch/*.rpm
 
       - name: Upload SRPM
         uses: actions/upload-artifact@v4
         with:
+          if-no-files-found: error
           name: nhc-srpm-rocky${{ matrix.rocky }}
           path: rpmbuild-${{ matrix.rocky }}/SRPMS/*.rpm
