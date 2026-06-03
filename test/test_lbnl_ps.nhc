@@ -1,7 +1,7 @@
 # Tests for lbnl_ps.nhc
 
 function populate_ps_data() {
-    local SYSUSER UID
+    local SYSUSER SYS_UID
 
     # Sample process data taken from an actual compute node running an
     # actual job.  Kernel threads and some other unrelated processes
@@ -328,14 +328,15 @@ function populate_ps_data() {
     PWDATA_USERS=( "root" "rpcuser" "rpc" "ntp" "mej" "someuser" )
     PWDATA_SYSTEM_USERS=( "root" "rpcuser" "rpc" "ntp" )
     PWDATA_USERID_MAP="||root:0||rpcuser:29||rpc:32||ntp:38||mej:777||someuser:12345"
-    MAX_SYS_UID=0
-    for UID in "${PWDATA_UIDS[@]}" ; do
+    FIXTURE_MAX_SYS_UID=0
+    for SYS_UID in "${PWDATA_UIDS[@]}" ; do
         for SYSUSER in "${PWDATA_SYSTEM_USERS[@]}" ; do
-            if [[ "${PWUID_USER[$UID]}" = "$SYSUSER" && $UID -gt $MAX_SYS_UID ]]; then
-                MAX_SYS_UID=$UID
+            if [[ "${PWUID_USER[$SYS_UID]}" = "$SYSUSER" && $SYS_UID -gt $FIXTURE_MAX_SYS_UID ]]; then
+                FIXTURE_MAX_SYS_UID=$SYS_UID
             fi
         done
     done
+    MAX_SYS_UID=$FIXTURE_MAX_SYS_UID
 
     # Fake job data so we don't need /var/spool/torque/mom_priv/jobs/*.JB
     NHC_AUTH_USERS="root nobody mej"
@@ -498,6 +499,9 @@ plan $((14+10+6+29+18+6+5+7+6+6+9)) "lbnl_ps.nhc" && {
     SHELL=: check_ps_service -E "true" httpd
     is $? 0 "Service check with found action (daemon not found -- success)"
 
+    # Resource consumption checks should inspect the full fixture process list.
+    MAX_SYS_UID=-1
+
     # Checks for excessive CPU utilization
     check_ps_cpu 99
     is $? 1 "CPU utilization >= 99%, any process"
@@ -580,6 +584,8 @@ plan $((14+10+6+29+18+6+5+7+6+6+9)) "lbnl_ps.nhc" && {
     is $? 1 "CPU time utilization for root-owned process >= 60m"
     check_ps_time 1800
     is $? 1 "CPU time utilization >= 1800"
+
+    MAX_SYS_UID=$FIXTURE_MAX_SYS_UID
 
     # Check all processes to make sure they're owned by authorized users.
     check_ps_unauth_users die
