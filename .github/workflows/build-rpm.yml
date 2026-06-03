@@ -1,0 +1,57 @@
+name: Build RPM
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-rpm:
+    strategy:
+      fail-fast: false
+      matrix:
+        rocky: [8, 9, 10]
+
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux:${{ matrix.rocky }}
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          dnf install -y rpm-build make automake autoconf gcc git
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Mark repository as safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Generate build system
+        run: ./autogen.sh
+
+      - name: Create source tarball
+        run: make dist
+
+      - name: Build RPM
+        run: |
+          rpmbuild -ta lbnl-nhc-*.tar.gz \
+            --define "_topdir $GITHUB_WORKSPACE/rpmbuild-${{ matrix.rocky }}"
+
+      - name: Upload RPMs
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: nhc-rpms-rocky${{ matrix.rocky }}
+          path: rpmbuild-${{ matrix.rocky }}/RPMS/noarch/*.rpm
+
+      - name: Upload SRPM
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: nhc-srpm-rocky${{ matrix.rocky }}
+          path: rpmbuild-${{ matrix.rocky }}/SRPMS/*.rpm
